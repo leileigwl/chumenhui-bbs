@@ -121,7 +121,7 @@ function FilterSheet({ visible, onClose, onApply, accentColor }) {
   const [selType, setSelType] = useState('all');
 
   const times = [['all','全部时间'], ['week','本周'], ['month','本月']];
-  const types = [['all','全部'], ['image','有图片'], ['data','有数据对比'], ['elite','精华']];
+  const types = [['all','全部'], ['image','有图片'], ['elite','精华']];
 
   const chipStyle = (active, color, bg) => ({
     padding: '7px 16px', borderRadius: 100, cursor: 'pointer', fontSize: 13,

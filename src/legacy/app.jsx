@@ -1,5 +1,5 @@
 const { useState, useRef, useEffect } = React;
-const { Ico, Logo, Avatar, TagChip, DataHighlight, ImagePlaceholder, PostImage, PostCard, BottomNav } = window;
+const { Ico, Logo, Avatar, TagChip, ImagePlaceholder, PostImage, PostCard, BottomNav } = window;
 const { TweaksPanel, useTweaks, TweakSection, TweakColor, TweakRadio, TweakToggle } = window;
 const { UserProfileScreen, FilterSheet } = window;
 const { SettingsScreen } = window;
@@ -288,13 +288,6 @@ function PostDetailScreen({ post, onBack, onShare, onUserClick, savedPostIds, on
               <p style={{ fontSize: 15, color: '#2A2520', lineHeight: 1.85 }}>{post.excerpt}</p>
             )}
           </div>
-
-          {/* Data highlight */}
-          {post.dataHighlight && (
-            <div style={{ margin: '16px 0' }}>
-              <DataHighlight {...post.dataHighlight}/>
-            </div>
-          )}
 
           {/* Hashtags */}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 20 }}>
@@ -623,9 +616,6 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [selCat, setSelCat] = useState('');
-  const [showData, setShowData] = useState(false);
-  const [dataBefore, setDataBefore] = useState('');
-  const [dataAfter, setDataAfter] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageRatio, setImageRatio] = useState('16:9');
   const done = title.trim() && selCat;
@@ -665,7 +655,6 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
               imageUrl,
               imageRatio,
               imageAspect,
-              dataHighlight: showData && dataBefore && dataAfter ? { before: dataBefore, after: dataAfter } : null,
               likes: 0,
               bookmarks: 0,
               comments: 0,
@@ -707,7 +696,7 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
         <textarea
           value={body}
           onChange={e => setBody(e.target.value)}
-          placeholder="分享你的 AI 实战经验、智能体案例、赚钱心得……\n\n支持图片、数据对比等丰富内容"
+          placeholder="分享你的 AI 实战经验、智能体案例、赚钱心得……\n\n支持图片等内容展示"
           style={{
             width: '100%', background: 'none', border: 'none', outline: 'none', resize: 'none',
             fontSize: 15, color: '#1C1815', lineHeight: 1.8, fontFamily: 'inherit',
@@ -788,44 +777,6 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
           </div>
         </div>
 
-        {/* Data highlight toggle */}
-        <div
-          onClick={() => setShowData(!showData)}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: '#F8F5F0', borderRadius: 12, padding: '12px 14px', cursor: 'pointer',
-            marginBottom: showData ? 8 : 0,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 16 }}>📊</span>
-            <span style={{ fontSize: 14, color: '#1C1815', fontWeight: 500 }}>添加数据对比（效果更突出）</span>
-          </div>
-          <Ico name={showData ? 'back' : 'plus'} size={16} color="#A49E97"/>
-        </div>
-
-        {showData && (
-          <div style={{ background: '#F8F5F0', borderRadius: '0 0 12px 12px', padding: '12px 14px', marginBottom: 16 }}>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#A49E97', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Before</div>
-                <input value={dataBefore} onChange={e => setDataBefore(e.target.value)}
-                  placeholder="例：月收益 ¥0"
-                  style={{ width: '100%', background: '#fff', border: '1px solid #E8E2D9', borderRadius: 8,
-                    padding: '8px 10px', fontSize: 13, outline: 'none', color: '#1C1815', fontFamily: 'inherit' }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: '#1A7A4A', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>After</div>
-                <input value={dataAfter} onChange={e => setDataAfter(e.target.value)}
-                  placeholder="例：月收益 ¥32,000"
-                  style={{ width: '100%', background: '#fff', border: '1px solid #E8E2D9', borderRadius: 8,
-                    padding: '8px 10px', fontSize: 13, outline: 'none', color: '#1A7A4A', fontFamily: 'inherit' }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -1136,7 +1087,6 @@ function App() {
   const matchesTypeFilter = (post, type) => {
     if (type === 'all') return true;
     if (type === 'image') return !!post.hasImage;
-    if (type === 'data') return !!post.dataHighlight;
     if (type === 'elite') return !!post.isElite;
     return true;
   };

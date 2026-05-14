@@ -79,26 +79,6 @@ function TagChip({ categoryId, small = false }) {
   );
 }
 
-/* ─── DataHighlight ───────────────────────────────────────── */
-function DataHighlight({ before, after }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-      background: '#F8F5F0', borderRadius: 10, padding: '10px 14px', marginTop: 8,
-    }}>
-      <div style={{ flex: 1, textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: '#A49E97', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>before</div>
-        <div style={{ fontSize: 13, color: '#6B6560', fontWeight: 600 }}>{before}</div>
-      </div>
-      <div style={{ color: '#C95B15', fontSize: 18, fontWeight: 300 }}>→</div>
-      <div style={{ flex: 1, textAlign: 'center' }}>
-        <div style={{ fontSize: 10, color: '#A49E97', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>after</div>
-        <div style={{ fontSize: 13, color: '#1A7A4A', fontWeight: 700 }}>{after}</div>
-      </div>
-    </div>
-  );
-}
-
 /* ─── ImagePlaceholder ────────────────────────────────────── */
 function ImagePlaceholder({ categoryId, aspect = 1.4, rounded = true }) {
   const colorMap = {
@@ -211,14 +191,10 @@ function PostCard({ post, onClick, onUserClick }) {
             fontSize: 12, color: '#7A7268', lineHeight: 1.6,
             display: '-webkit-box', WebkitLineClamp: post.hasImage ? 1 : 3,
             WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            marginBottom: post.dataHighlight ? 8 : 0,
           }}>
             {post.excerpt}
           </div>
         )}
-
-        {/* Data highlight */}
-        {post.dataHighlight && <DataHighlight {...post.dataHighlight}/>}
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
@@ -280,4 +256,4 @@ function BottomNav({ active, onChange, onPublish }) {
 }
 
 /* ─── Exports ─────────────────────────────────────────────── */
-Object.assign(window, { Ico, Logo, Avatar, TagChip, DataHighlight, ImagePlaceholder, PostImage, PostCard, BottomNav });
+Object.assign(window, { Ico, Logo, Avatar, TagChip, ImagePlaceholder, PostImage, PostCard, BottomNav });
