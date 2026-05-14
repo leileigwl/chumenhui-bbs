@@ -1,0 +1,79 @@
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, sans-serif;
+  background: #18120d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 8px;
+}
+
+.phone-shell {
+  width: min(390px, calc(100vw - 16px));
+  height: min(844px, calc(100dvh - 16px));
+  overflow: hidden;
+  position: relative;
+  border-radius: 42px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.06),
+    0 0 0 10px #1A1209,
+    0 0 0 11px rgba(255,255,255,0.04),
+    0 40px 90px rgba(0,0,0,0.7);
+  background: #F8F5F0;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (max-width: 430px) {
+  body {
+    background: #F8F5F0;
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .phone-shell {
+    width: 100vw;
+    height: 100svh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+* {
+  scrollbar-width: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+input,
+textarea,
+button {
+  font-family: inherit;
+}

@@ -1,0 +1,115 @@
+export const seedUsers = [
+  { id: 1, name: "张伟远", title: "AI 产品负责人", followers: 3200, posts: 28, likes: 4820, level: "精英" },
+  { id: 2, name: "李思敏", title: "独立创业者", followers: 1850, posts: 45, likes: 9340, level: "进阶" },
+  { id: 3, name: "陈浩然", title: "AI 工程师", followers: 920, posts: 15, likes: 2100, level: "初阶" },
+  { id: 4, name: "王晓芳", title: "AI 培训讲师", followers: 5600, posts: 67, likes: 21800, level: "导师" },
+  { id: 5, name: "刘明远", title: "企业数字化顾问", followers: 2300, posts: 31, likes: 7600, level: "精英" },
+];
+
+export const categories = [
+  { id: "all", label: "全部", color: "#c95b15", bg: "#fef1e8" },
+  { id: "agent", label: "AI 智能体", color: "#2b5ce6", bg: "#ebf0fd" },
+  { id: "earning", label: "赚钱实战", color: "#1a7a4a", bg: "#e6f5ee" },
+  { id: "camp", label: "训练营", color: "#c95b15", bg: "#fef1e8" },
+  { id: "talent", label: "人才培养", color: "#7c3aed", bg: "#f5f3ff" },
+];
+
+export const seedPosts = [
+  {
+    id: 1,
+    userId: 2,
+    category: "earning",
+    title: "3 个月 AI 副业月入 3 万，完整复盘",
+    excerpt: "我是全职程序员，利用 Claude API + n8n 搭了自动化接单系统，专接 AI 外包小项目。",
+    content: "专接企业内部智能问答机器人项目，客户提供文档，我负责接入、部署、调试，收费 3000–8000 元/个。闲鱼、朋友圈和转介绍是主要获客渠道。",
+    likes: 486,
+    bookmarks: 124,
+    comments: 73,
+    timeAgo: "3小时前",
+    isHot: true,
+    isElite: false,
+    tags: ["副业", "Claude", "n8n"],
+    dataHighlight: { before: "月收益 ¥0", after: "月收益 ¥32,000" },
+    image: "/uploads/pasted-1778730429355-0.png",
+    imageRatio: "landscape",
+  },
+  {
+    id: 2,
+    userId: 3,
+    category: "agent",
+    title: "AI 选题智能体上线 2 个月，小红书涨粉 5000",
+    excerpt: "三层智能体架构：Claude + Dify + 飞书，每天自动出 10 个爆款选题。",
+    content: "我把选题、资料收集、改写拆成三段，最终只保留人工审核。两个月内账号新增精准粉丝 5000+。",
+    likes: 321,
+    bookmarks: 98,
+    comments: 44,
+    timeAgo: "5小时前",
+    isHot: true,
+    isElite: true,
+    tags: ["智能体", "Dify", "小红书"],
+    image: "/uploads/pasted-1778730404549-0.png",
+    imageRatio: "portrait",
+  },
+  {
+    id: 3,
+    userId: 4,
+    category: "talent",
+    title: "帮 20 家企业 AI 落地，踩过的 10 个真实坑",
+    excerpt: "80% 的项目失败都有共同原因。坑一：把 AI 当搜索引擎用；坑二：忽视数据质量。",
+    content: "让所有员工问 AI 什么都回答，最后大量幻觉问题。正确做法是先限定场景，再做数据治理、培训与 ROI 衡量。",
+    likes: 892,
+    bookmarks: 267,
+    comments: 156,
+    timeAgo: "2天前",
+    isHot: true,
+    isElite: true,
+    tags: ["企业落地", "避坑", "AI转型"],
+    image: "/uploads/pasted-1778730429355-0.png",
+    imageRatio: "landscape",
+  },
+  {
+    id: 4,
+    userId: 4,
+    category: "camp",
+    title: "学员用 AI 3 个月变现 15 万，完整复盘",
+    excerpt: "7 期训练营学员的实战复盘：从 0 基础到 AI 变现，她走了哪条路。",
+    content: "从选题、报价、交付、复购四段拆开练，真正起量的关键是案例闭环，不是工具数量。",
+    likes: 567,
+    bookmarks: 178,
+    comments: 89,
+    timeAgo: "2周前",
+    isHot: true,
+    isElite: true,
+    tags: ["训练营", "变现", "学员案例"],
+    dataHighlight: { before: "0 AI基础", after: "3个月变现 15万" },
+    image: "/uploads/pasted-1778730484153-0.png",
+    imageRatio: "portrait",
+  },
+  {
+    id: 5,
+    userId: 5,
+    category: "agent",
+    title: "Qwen3 本地部署 + RAG 知识库完整教程",
+    excerpt: "全程零基础向，环境配置、模型量化、知识库接入、API 封装一条龙。",
+    content: "建议先在本地完成最小可用链路，再考虑扩容。最大误区是直接追求大模型和全量文档接入。",
+    likes: 437,
+    bookmarks: 143,
+    comments: 67,
+    timeAgo: "1周前",
+    isHot: false,
+    isElite: false,
+    tags: ["Qwen3", "RAG", "本地部署"],
+    image: "/uploads/pasted-1778730404549-0.png",
+    imageRatio: "landscape",
+  }
+];
+
+export const seedComments = {
+  1: [
+    { id: 101, userId: 3, content: "接单渠道主要是哪里？", timeAgo: "2小时前", likes: 23 },
+    { id: 102, userId: 5, content: "Claude 成本控制能展开吗？", timeAgo: "45分钟前", likes: 12 }
+  ],
+  3: [
+    { id: 103, userId: 2, content: "数据质量这个坑非常真实。", timeAgo: "18小时前", likes: 28 }
+  ]
+};
