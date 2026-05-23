@@ -13,6 +13,8 @@
     { id: 'earning', label: '赚钱实战',  color: '#1A7A4A', bg: '#E6F5EE' },
     { id: 'camp',    label: '训练营',    color: '#C95B15', bg: '#FEF1E8' },
     { id: 'talent',  label: '人才培养',  color: '#7C3AED', bg: '#F5F3FF' },
+    { id: 'claudecode', label: 'ClaudeCode', color: '#5B4FE6', bg: '#F0EFFD' },
+    { id: 'codex', label: 'Codex', color: '#0E7490', bg: '#ECFEFF' },
   ];
 
   const posts = [
@@ -112,6 +114,54 @@
       likes: 145, bookmarks: 48, comments: 23, timeAgo: '2周前',
       isHot: false, isElite: false, tags: ['人才', 'T型人才', '成长'],
     },
+    {
+      id: 13, userId: 1, category: 'claudecode',
+      title: 'Claude Code CLI 让我的开发效率提升 3 倍',
+      excerpt: '我把重构、测试、文档和 PR 审查都交给 Claude Code CLI，再用 Git 工作流串起来，3 天的活压到 4 小时，分享 5 个高频场景和配置细节。',
+      hasImage: true, imageAspect: 16 / 9, imageUrl: '/uploads/pasted-1778730429355-0.png', imageRatio: '16:9',
+      likes: 744, bookmarks: 221, comments: 96, timeAgo: '2小时前',
+      isHot: true, isElite: false, tags: ['ClaudeCode', 'CLI', '工作流'],
+    },
+    {
+      id: 14, userId: 4, category: 'claudecode',
+      title: 'Claude Code 上下文管理的 7 个技巧',
+      excerpt: '200k token 不是越满越好。我整理了从 .claudeignore、CLAUDE.md 到模块化 profile 的 7 个技巧，让 Claude 真正理解项目架构。',
+      hasImage: false,
+      likes: 613, bookmarks: 187, comments: 82, timeAgo: '4小时前',
+      isHot: false, isElite: true, tags: ['ClaudeCode', '上下文', '最佳实践'],
+    },
+    {
+      id: 15, userId: 3, category: 'claudecode',
+      title: '用 Claude Code 调试生产环境 Bug 的完整流程',
+      excerpt: '凌晨 3 点线上支付报警，我让 Claude Code 先读日志再定位代码，20 分钟完成修复、测试和回滚方案，复盘完整流程。',
+      hasImage: true, imageAspect: 9 / 16, imageUrl: '/uploads/pasted-1778730484153-0.png', imageRatio: '9:16',
+      likes: 980, bookmarks: 304, comments: 126, timeAgo: '6小时前',
+      isHot: true, isElite: true, tags: ['ClaudeCode', '调试', '生产环境'],
+    },
+    {
+      id: 16, userId: 5, category: 'codex',
+      title: 'Codex 辅助开发：从需求到上线只用 2 天',
+      excerpt: '我用 Codex 跑完需求拆解、数据库设计、接口实现和联调，把一个企业工单系统从 0 做到上线，只用了 2 天。',
+      hasImage: true, imageAspect: 16 / 9, imageUrl: '/uploads/pasted-1778730404549-0.png', imageRatio: '16:9',
+      likes: 538, bookmarks: 176, comments: 64, timeAgo: '3小时前',
+      isHot: true, isElite: false, tags: ['Codex', '全栈开发', 'Prompt'],
+    },
+    {
+      id: 17, userId: 4, category: 'codex',
+      title: 'Codex 代码审查：发现了 12 个人工漏掉的问题',
+      excerpt: '把 Codex 接进 PR 流程后，我在一轮审查里抓出 SQL 注入、内存泄漏和并发竞态等 12 个问题，还顺手补了测试。',
+      hasImage: false,
+      likes: 872, bookmarks: 245, comments: 118, timeAgo: '1天前',
+      isHot: false, isElite: true, tags: ['Codex', 'CodeReview', '代码质量'],
+    },
+    {
+      id: 18, userId: 2, category: 'codex',
+      title: '用 Codex 学习新技术栈，1 周掌握 Rust',
+      excerpt: '我把 7 天 Rust 学习拆成概念理解、语法练习、小项目和实战，配合 100+ 个 Prompt 模板，第一次把新技术栈啃透。',
+      hasImage: true, imageAspect: 9 / 16, imageUrl: '/uploads/pasted-1778730484153-0.png', imageRatio: '9:16',
+      likes: 765, bookmarks: 233, comments: 101, timeAgo: '2天前',
+      isHot: true, isElite: true, tags: ['Codex', '学习', 'Rust'],
+    },
   ];
 
   const comments = {
@@ -160,6 +210,66 @@
       },
       { id: 9, userId: 4, content: '涨粉5000的数据是不是有水分？内容质量怎么保证的', likes: 15, timeAgo: '4小时前', replies: [] },
     ],
+    13: [
+      {
+        id: 201, userId: 3, content: '这个流程很实用，尤其是 PR 审查那一步。',
+        likes: 21, timeAgo: '1小时前',
+        replies: [
+          { id: 202, userId: 1, content: '@陈浩然 先让它扫 diff，再人工收口，效率最高。', likes: 9, timeAgo: '45分钟前' },
+        ],
+      },
+      { id: 203, userId: 4, content: '重构 5000 行时，怎么避免它乱改接口？', likes: 18, timeAgo: '50分钟前', replies: [] },
+    ],
+    14: [
+      { id: 204, userId: 2, content: '.claudeignore 这步真的被很多人忽略了。', likes: 27, timeAgo: '3小时前', replies: [] },
+      {
+        id: 205, userId: 5, content: '模块化 profile 的思路很好，能不能再展开说下？',
+        likes: 14, timeAgo: '2小时前',
+        replies: [
+          { id: 206, userId: 4, content: '@刘明远 我下次单独写一篇，实际效果比堆 token 强很多。', likes: 8, timeAgo: '1小时前' },
+        ],
+      },
+    ],
+    15: [
+      { id: 207, userId: 5, content: '凌晨 3 点那段太真实了，日志分析确实是第一步。', likes: 35, timeAgo: '5小时前', replies: [] },
+      {
+        id: 208, userId: 1, content: '修复时你会先打补丁还是先做回滚预案？',
+        likes: 16, timeAgo: '4小时前',
+        replies: [
+          { id: 209, userId: 3, content: '@张伟远 先确保能回滚，再补兼容逻辑。', likes: 11, timeAgo: '3小时前' },
+        ],
+      },
+    ],
+    16: [
+      { id: 210, userId: 1, content: '这个工单系统的需求拆解方法可以直接抄。', likes: 22, timeAgo: '2小时前', replies: [] },
+      {
+        id: 211, userId: 3, content: '数据库设计和接口一起推进，确实能少很多返工。',
+        likes: 19, timeAgo: '1小时前',
+        replies: [
+          { id: 212, userId: 5, content: '@陈浩然 对，Codex 最适合这种并行协作。', likes: 7, timeAgo: '40分钟前' },
+        ],
+      },
+    ],
+    17: [
+      { id: 213, userId: 2, content: '12 个问题有点夸张，但我相信它能抓到不少人工漏项。', likes: 28, timeAgo: '20小时前', replies: [] },
+      {
+        id: 214, userId: 5, content: 'SQL 注入和并发问题确实最容易被忽略，值得接入。',
+        likes: 17, timeAgo: '18小时前',
+        replies: [
+          { id: 215, userId: 4, content: '@刘明远 先做第一轮机器审查，人工效率会高很多。', likes: 10, timeAgo: '16小时前' },
+        ],
+      },
+    ],
+    18: [
+      { id: 216, userId: 3, content: '7 天一门语言，这个节奏很适合实战型学习。', likes: 31, timeAgo: '1天前', replies: [] },
+      {
+        id: 217, userId: 4, content: '100+ 个 Prompt 模板是怎么整理出来的？',
+        likes: 20, timeAgo: '22小时前',
+        replies: [
+          { id: 218, userId: 2, content: '@王晓芳 先按概念分类，再按练习类型归档。', likes: 12, timeAgo: '20小时前' },
+        ],
+      },
+    ],
   };
 
   const postBodies = {
@@ -186,6 +296,54 @@
       { type: 'h2', text: '坑四：不会算 ROI' },
       { type: 'p', text: '说不清楚 AI 到底省了多少钱，第二年预算就被砍。要从一开始就设定可量化的指标，按月汇报。' },
       { type: 'p', text: '后面还有 6 个坑，欢迎评论区交流你们遇到的情况。' },
+    ],
+    13: [
+      { type: 'p', text: '我不是把 Claude Code 当聊天工具，而是直接放进日常开发流。' },
+      { type: 'h2', text: '5 个高频场景' },
+      { type: 'list', items: ['代码重构', '单元测试生成', 'API 文档编写', '代码审查', 'Bug 修复'] },
+      { type: 'h2', text: '配置方式' },
+      { type: 'p', text: '我给它准备了常用 Prompt 模板、项目级配置和 Git hooks，让它每次都在同一套规则下工作。' },
+      { type: 'h2', text: '结果' },
+      { type: 'p', text: '一个 5000 行遗留模块，传统方式要 3 天，我用 Claude Code 4 小时就完成了重构、测试和文档。' },
+    ],
+    14: [
+      { type: 'p', text: '上下文不是越多越好，关键是让 Claude 看到最有价值的那部分。' },
+      { type: 'h2', text: '我常用的 7 个做法' },
+      { type: 'list', items: ['用 .claudeignore 排除无关文件', '写清 CLAUDE.md', '分阶段给上下文', '用 Artifact 保存决策', '主动压缩长对话', '按模块拆分', '利用缓存批量处理'] },
+      { type: 'h2', text: '效果' },
+      { type: 'p', text: '上下文从 180k token 压到 40k 左右后，响应更快，回答也更聚焦。' },
+    ],
+    15: [
+      { type: 'p', text: '凌晨 3 点报警后，我先把日志丢给 Claude Code 读，再去看代码。' },
+      { type: 'h2', text: '完整流程' },
+      { type: 'list', items: ['分析错误日志', '定位问题代码', '生成兼容修复', '补单元测试', '准备回滚和监控'] },
+      { type: 'h2', text: '关键点' },
+      { type: 'p', text: '生产环境修复最重要的是兼容旧数据、保留回滚路径，并且把测试一起补上。' },
+    ],
+    16: [
+      { type: 'p', text: '这次我把 Codex 放进完整的全栈开发流程里，从需求拆解一路做到上线。' },
+      { type: 'h2', text: '推进顺序' },
+      { type: 'list', items: ['先读业务说明', '再做数据库设计', '同步定义接口', '最后生成前端和测试'] },
+      { type: 'h2', text: '最有用的 Prompt' },
+      { type: 'p', text: '不是一句“帮我写代码”，而是明确边界：保持现有风格、不乱加依赖、先出方案再出代码。' },
+      { type: 'h2', text: '结果' },
+      { type: 'p', text: '原本预估 5 天的工单系统，最终 2 天上线。' },
+    ],
+    17: [
+      { type: 'p', text: '我把 Codex 接进 PR 审查流程后，它先负责扫一轮全量变更，我再做人工确认。' },
+      { type: 'h2', text: '重点审查项' },
+      { type: 'list', items: ['代码规范', '逻辑正确性', '性能问题', '安全漏洞', '可维护性'] },
+      { type: 'h2', text: '典型发现' },
+      { type: 'p', text: '这次它抓出了 SQL 拼接、并发竞态和一个高并发下会放大的内存泄漏。' },
+    ],
+    18: [
+      { type: 'p', text: '我把 Rust 学习拆成 7 天，每天只解决一个主题，再让 Codex 帮我做理解和练习。' },
+      { type: 'h2', text: '7 天节奏' },
+      { type: 'list', items: ['所有权和借用', '变量和类型', '错误处理', 'trait 和泛型', '模块结构', '异步编程', '小项目实战'] },
+      { type: 'h2', text: 'Codex 的用法' },
+      { type: 'p', text: '我让它解释概念、改写示例、出练习题，再帮我检查逻辑漏洞，而不是直接给最终答案。' },
+      { type: 'h2', text: '结果' },
+      { type: 'p', text: '1 周后我能独立写一个基础 Rust CLI，也更知道怎么继续自学。' },
     ],
   };
 
