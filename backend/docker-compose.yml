@@ -1,0 +1,18 @@
+# BBS 专用数据库（PostgreSQL 5433 端口，不与现有容器冲突）
+# Redis 直接复用已在运行的 matrixai-redis（6379）
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: bbs_user
+      POSTGRES_PASSWORD: bbs_pass
+      POSTGRES_DB: bbs_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
