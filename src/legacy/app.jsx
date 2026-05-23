@@ -4,6 +4,71 @@ const { TweaksPanel, useTweaks, TweakSection, TweakColor, TweakRadio, TweakToggl
 const { UserProfileScreen, FilterSheet } = window;
 const { SettingsScreen } = window;
 
+async function apiRequest(method, path, body) {
+  const headers = {}
+  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  if (window.AUTH?.token) headers['Authorization'] = `Bearer ${window.AUTH.token}`
+  const res = await fetch(`http://localhost:3001/api/v1${path}`, {
+    method,
+    headers,
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  })
+  const json = await res.json()
+  if (!json.success) throw new Error(json.error?.message || '请求失败')
+  return json.data
+}
+
+function requireAuth() {
+  if (!window.AUTH?.isLoggedIn) {
+    window.AUTH?._showLoginModal?.()
+    return false
+  }
+  return true
+}
+
+function timeAgoFromDate(dateStr) {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+  if (mins < 60) return mins <= 1 ? '刚刚' : `${mins}分钟前`
+  if (hours < 24) return `${hours}小时前`
+  if (days < 7) return `${days}天前`
+  return `${Math.floor(days / 7)}周前`
+}
+
+function adaptApiComment(c) {
+  const apiUser = c.user
+  if (apiUser && !window.APP_DATA.users.find(u => u.id === apiUser.id)) {
+    window.APP_DATA.users.push({
+      id: apiUser.id,
+      name: apiUser.nickname || apiUser.username,
+      avatar: apiUser.avatar || null,
+      title: apiUser.title || '',
+    })
+  }
+  return {
+    id: c.id,
+    userId: apiUser?.id || c.userId,
+    content: c.content,
+    likes: c.likeCount || 0,
+    timeAgo: timeAgoFromDate(c.createdAt),
+    replies: (c.replies || []).map(r => {
+      const ru = r.user
+      if (ru && !window.APP_DATA.users.find(u => u.id === ru.id)) {
+        window.APP_DATA.users.push({ id: ru.id, name: ru.nickname || ru.username, avatar: ru.avatar || null, title: ru.title || '' })
+      }
+      return {
+        id: r.id,
+        userId: ru?.id || r.userId,
+        content: r.content,
+        likes: r.likeCount || 0,
+        timeAgo: timeAgoFromDate(r.createdAt),
+      }
+    }),
+  }
+}
+
 /* ══════════════════════════════════════════════════════════
    FEED SCREEN
 ══════════════════════════════════════════════════════════ */
@@ -200,12 +265,76 @@ function FeedScreen({ onPostClick, onViewHotList, onUserClick, onFilterClick, ac
    POST DETAIL SCREEN
 ══════════════════════════════════════════════════════════ */
 function PostDetailScreen({ post, onBack, onShare, onUserClick, savedPostIds, onToggleSave }) {
-  const { users, comments, postBodies } = window.APP_DATA;
+  const { users } = window.APP_DATA;
   const user = users.find(u => u.id === post.userId);
-  const postComments = comments[post.id] || [];
-  const body = postBodies[post.id];
   const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likes || 0);
+  const [commentText, setCommentText] = useState('');
+  const [postCommentList, setPostCommentList] = useState([]);
+  const [postContent, setPostContent] = useState(null);
   const bookmarked = savedPostIds ? savedPostIds.has(post.id) : false;
+
+  useEffect(() => {
+    const headers = window.AUTH?.token ? { Authorization: `Bearer ${window.AUTH.token}` } : {}
+    // Fetch full post detail (content + isLiked/isBookmarked)
+    fetch(`http://localhost:3001/api/v1/posts/${post.id}`, { headers })
+      .then(r => r.json())
+      .then(json => {
+        if (json.success) {
+          setLiked(json.data.isLiked || false)
+          setLikeCount(json.data.likeCount ?? post.likes ?? 0)
+          if (json.data.content) setPostContent(json.data.content)
+        }
+      })
+      .catch(() => {})
+    // Fetch comments
+    fetch(`http://localhost:3001/api/v1/posts/${post.id}/comments`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && Array.isArray(json.data)) {
+          setPostCommentList(json.data.map(adaptApiComment))
+        }
+      })
+      .catch(() => {})
+  }, [post.id])
+
+  const handleLike = async () => {
+    if (!requireAuth()) return
+    const wasLiked = liked
+    setLiked(!wasLiked)
+    setLikeCount(c => wasLiked ? c - 1 : c + 1)
+    try {
+      if (wasLiked) {
+        await apiRequest('DELETE', `/posts/${post.id}/like`)
+      } else {
+        await apiRequest('POST', `/posts/${post.id}/like`)
+      }
+    } catch (e) {
+      setLiked(wasLiked)
+      setLikeCount(c => wasLiked ? c + 1 : c - 1)
+    }
+  }
+
+  const handleSubmitComment = async () => {
+    if (!requireAuth()) return
+    if (!commentText.trim()) return
+    try {
+      const newComment = await apiRequest('POST', `/posts/${post.id}/comments`, {
+        content: commentText,
+      })
+      setPostCommentList(prev => [{
+        id: newComment.id,
+        userId: newComment.userId,
+        content: newComment.content,
+        likes: 0,
+        timeAgo: '刚刚',
+        replies: [],
+      }, ...prev])
+      setCommentText('')
+    } catch (e) {
+      alert('评论失败：' + e.message)
+    }
+  }
 
   const renderBody = (sections) => sections.map((s, i) => {
     if (s.type === 'h2') return (
@@ -284,7 +413,12 @@ function PostDetailScreen({ post, onBack, onShare, onUserClick, savedPostIds, on
 
           {/* Body */}
           <div style={{ marginTop: 12 }}>
-            {body ? renderBody(body) : (
+            {postContent ? (
+              <div
+                dangerouslySetInnerHTML={{ __html: postContent }}
+                style={{ fontSize: 15, color: '#2A2520', lineHeight: 1.85 }}
+              />
+            ) : (
               <p style={{ fontSize: 15, color: '#2A2520', lineHeight: 1.85 }}>{post.excerpt}</p>
             )}
           </div>
@@ -303,20 +437,20 @@ function PostDetailScreen({ post, onBack, onShare, onUserClick, savedPostIds, on
         {/* Comments */}
         <div style={{ borderTop: '8px solid #F8F5F0', padding: '0 16px 20px' }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: '#1C1815', padding: '14px 0 10px' }}>
-            评论 {postComments.length}
+            评论 {postCommentList.length}
           </div>
-          {postComments.length === 0 && (
+          {postCommentList.length === 0 && (
             <div style={{ textAlign: 'center', color: '#A49E97', fontSize: 13, padding: '20px 0' }}>
               暂无评论，来说点什么
             </div>
           )}
-          {postComments.map((c, i) => {
+          {postCommentList.map((c, i) => {
             const cu = users.find(u => u.id === c.userId);
             const hasReplies = c.replies && c.replies.length > 0;
             return (
               <div key={c.id} style={{
                 padding: '12px 0',
-                borderBottom: i < postComments.length - 1 ? '1px solid #F2EDE6' : 'none',
+                borderBottom: i < postCommentList.length - 1 ? '1px solid #F2EDE6' : 'none',
               }}>
                 {/* Main comment */}
                 <div style={{ display: 'flex', gap: 10 }}>
@@ -371,12 +505,19 @@ function PostDetailScreen({ post, onBack, onShare, onUserClick, savedPostIds, on
         display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px 12px',
         borderTop: '1px solid #EDE8E0', background: '#fff', flexShrink: 0,
       }}>
-        <div style={{
-          flex: 1, background: '#F8F5F0', borderRadius: 20,
-          padding: '9px 14px', fontSize: 13, color: '#A49E97',
-        }}>写评论…</div>
+        <input
+          value={commentText}
+          onChange={e => setCommentText(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleSubmitComment()}
+          placeholder="写评论…"
+          style={{
+            flex: 1, background: '#F8F5F0', borderRadius: 20,
+            padding: '9px 14px', fontSize: 13, color: '#1C1815',
+            border: 'none', outline: 'none',
+          }}
+        />
         {[
-          { icon: 'heart',    count: post.likes + (liked ? 1 : 0),      active: liked,      onTap: () => setLiked(!liked) },
+          { icon: 'heart',    count: likeCount,                              active: liked,      onTap: handleLike },
           { icon: 'bookmark', count: post.bookmarks + (bookmarked ? 1 : 0), active: bookmarked, onTap: () => onToggleSave && onToggleSave(post.id) },
           { icon: 'share',    count: null, active: false, onTap: onShare },
         ].map(({ icon, count, active, onTap }) => (
@@ -512,7 +653,13 @@ function SearchScreen({ onPostClick }) {
 ══════════════════════════════════════════════════════════ */
 function ProfileScreen({ onPostClick, accentColor, savedPostIds, onEditProfile, posts }) {
   const { users } = window.APP_DATA;
-  const me = users[3];
+  const authUser = window.AUTH?.currentUser;
+  const demoUser = users.find(u => u.id === 4) || users[0] || {
+    id: 4, name: '王晓芳', title: 'AI 变现顾问 · 楚门会导师',
+    level: '导师', posts: 12, likes: 2340, followers: 891,
+  };
+  const me = authUser || demoUser;
+  const isLoggedIn = !!authUser;
   const myPosts = posts.filter(p => p.userId === me.id);
   const savedPosts = savedPostIds ? posts.filter(p => savedPostIds.has(p.id)) : [];
   const [tab, setTab] = useState('posts');
@@ -529,11 +676,20 @@ function ProfileScreen({ onPostClick, accentColor, savedPostIds, onEditProfile, 
           height: 120, position: 'relative',
           background: `linear-gradient(135deg, ${accentColor}cc, #1C1815)`,
         }}>
-          <button onClick={onEditProfile} style={{
-            position: 'absolute', top: 12, right: 12,
-            background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: 8, padding: '6px 12px', color: '#fff', fontSize: 12, cursor: 'pointer',
-          }}>编辑资料</button>
+          {isLoggedIn ? (
+            <button onClick={onEditProfile} style={{
+              position: 'absolute', top: 12, right: 12,
+              background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: 8, padding: '6px 12px', color: '#fff', fontSize: 12, cursor: 'pointer',
+            }}>编辑资料</button>
+          ) : (
+            <button onClick={() => window.AUTH?._showLoginModal?.()} style={{
+              position: 'absolute', top: 12, right: 12,
+              background: 'rgba(255,255,255,0.9)', border: 'none',
+              borderRadius: 8, padding: '6px 14px', color: '#C95B15', fontSize: 12,
+              fontWeight: 700, cursor: 'pointer',
+            }}>登录 / 注册</button>
+          )}
         </div>
 
         {/* Avatar + Info */}
@@ -555,12 +711,12 @@ function ProfileScreen({ onPostClick, accentColor, savedPostIds, onEditProfile, 
             </div>
             <div style={{ fontSize: 13, color: '#7A7268', marginBottom: 10 }}>{me.title}</div>
             <div style={{ fontSize: 13, color: '#7A7268', lineHeight: 1.6, marginBottom: 14 }}>
-              专注 AI 落地与人才培养，帮助个人和企业用好 AI 工具。
+              {isLoggedIn ? (me.bio || '这个人很神秘，还没有填写简介。') : '专注 AI 落地与人才培养，帮助个人和企业用好 AI 工具。'}
             </div>
 
             {/* Stats */}
             <div style={{ display: 'flex', gap: 0, borderTop: '1px solid #EDE8E0', paddingTop: 14 }}>
-              {[['发帖', me.posts], ['获赞', `${(me.likes / 1000).toFixed(1)}k`], ['粉丝', me.followers]].map(([label, val]) => (
+              {[['发帖', me.posts], ['获赞', me.likes >= 1000 ? `${(me.likes / 1000).toFixed(1)}k` : me.likes], ['粉丝', me.followers]].map(([label, val]) => (
                 <div key={label} style={{ flex: 1, textAlign: 'center' }}>
                   <div style={{ fontSize: 18, fontWeight: 700, color: '#1C1815' }}>{val}</div>
                   <div style={{ fontSize: 12, color: '#A49E97', marginTop: 2 }}>{label}</div>
@@ -617,7 +773,9 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
   const [body, setBody] = useState('');
   const [selCat, setSelCat] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [imageRatio, setImageRatio] = useState('16:9');
+  const [publishing, setPublishing] = useState(false);
   const done = title.trim() && selCat;
 
   const imageAspect = imageRatio === '9:16' ? (9 / 16) : (16 / 9);
@@ -625,9 +783,40 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => setImageUrl(reader.result);
     reader.readAsDataURL(file);
+  };
+
+  const handlePublish = async () => {
+    if (!done || publishing) return;
+    setPublishing(true);
+    let coverUrl = null;
+    if (imageFile && window.AUTH?.token) {
+      try {
+        const fd = new FormData();
+        fd.append('file', imageFile);
+        const res = await fetch('http://localhost:3001/api/v1/upload/image', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${window.AUTH.token}` },
+          body: fd,
+        });
+        const json = await res.json();
+        if (json.success) coverUrl = `http://localhost:3001${json.data.url}`;
+      } catch (e) { /* proceed without image */ }
+    }
+    setPublishing(false);
+    onSubmit?.({
+      title: title.trim(),
+      excerpt: body.trim() || title.trim(),
+      content: body.trim() || title.trim(),
+      category: selCat,
+      coverUrl,
+      imageRatio,
+      imageAspect,
+      tags: [],
+    });
   };
 
   return (
@@ -642,34 +831,15 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
         </button>
         <span style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 600, color: '#1C1815' }}>发布帖子</span>
         <button
-          disabled={!done}
-          onClick={() => {
-            if (!done) return;
-            onSubmit?.({
-              id: Date.now(),
-              userId: 4,
-              category: selCat,
-              title: title.trim(),
-              excerpt: body.trim() || title.trim(),
-              hasImage: !!imageUrl,
-              imageUrl,
-              imageRatio,
-              imageAspect,
-              likes: 0,
-              bookmarks: 0,
-              comments: 0,
-              timeAgo: '刚刚',
-              isHot: false,
-              isElite: false,
-              tags: ['新发布'],
-            });
-          }}
+          disabled={!done || publishing}
+          onClick={handlePublish}
           style={{
-          background: done ? accentColor : '#E8E2D9', color: done ? '#fff' : '#A49E97',
+          background: (done && !publishing) ? accentColor : '#E8E2D9',
+          color: (done && !publishing) ? '#fff' : '#A49E97',
           border: 'none', borderRadius: 20, padding: '8px 20px',
-          fontSize: 14, fontWeight: 600, cursor: done ? 'pointer' : 'default',
+          fontSize: 14, fontWeight: 600, cursor: (done && !publishing) ? 'pointer' : 'default',
           transition: 'background 0.2s',
-        }}>发布</button>
+        }}>{publishing ? '上传中…' : '发布'}</button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
@@ -787,19 +957,64 @@ function CreatePostScreen({ onBack, accentColor, onSubmit }) {
 ══════════════════════════════════════════════════════════ */
 function MessagesScreen() {
   const { users } = window.APP_DATA;
-  const items = [
+  const [activeTab, setActiveTab] = useState('notify');
+  const notifies = [
+    { userId: 1, type: 'like',    text: '赞了你的帖子「从零到月薪 5 万 AI 工程师路线图」', time: '3分钟前', unread: true },
+    { userId: 5, type: 'follow',  text: '关注了你', time: '1小时前', unread: true },
+    { userId: 3, type: 'comment', text: '评论了你的帖子：「写得很好，受益匪浅！」', time: '3小时前', unread: false },
+    { userId: 2, type: 'like',    text: '赞了你的评论', time: '昨天', unread: false },
+    { userId: 4, type: 'comment', text: '回复了你：「可以私信我要配置文件～」', time: '2天前', unread: false },
+  ];
+  const messages = [
     { userId: 2, text: '太实用了！请问接单渠道主要是哪里？', time: '3分钟前', unread: 2 },
     { userId: 1, text: '你好，我想请教一下 AI 落地的问题', time: '1小时前', unread: 0 },
     { userId: 3, text: '收藏了你的文章，很有帮助！', time: '昨天', unread: 1 },
     { userId: 5, text: '能不能介绍一下你的培训课程？', time: '2天前', unread: 0 },
   ];
+  const typeIcon = { like: '❤️', follow: '➕', comment: '💬' };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F8F5F0' }}>
-      <div style={{ background: '#fff', borderBottom: '1px solid #EDE8E0', padding: '14px 16px', flexShrink: 0 }}>
+      <div style={{ background: '#fff', borderBottom: '1px solid #EDE8E0', padding: '14px 16px 0', flexShrink: 0 }}>
         <span style={{ fontSize: 17, fontWeight: 700, color: '#1C1815' }}>消息</span>
+        <div style={{ display: 'flex', marginTop: 12 }}>
+          {[['notify', '通知'], ['messages', '私信']].map(([id, label]) => (
+            <button key={id} onClick={() => setActiveTab(id)} style={{
+              flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+              padding: '8px 0', fontSize: 14,
+              fontWeight: activeTab === id ? 700 : 400,
+              color: activeTab === id ? '#1C1815' : '#A49E97',
+              borderBottom: activeTab === id ? '2.5px solid #C95B15' : '2.5px solid transparent',
+            }}>{label}</button>
+          ))}
+        </div>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {items.map((item, i) => {
+        {activeTab === 'notify' ? notifies.map((item, i) => {
+          const u = users.find(u => u.id === item.userId);
+          return (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12,
+              background: item.unread ? '#FFFBF7' : '#fff', padding: '14px 16px',
+              borderBottom: '1px solid #F2EDE6', cursor: 'pointer',
+            }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <Avatar user={u} size={44}/>
+                <span style={{
+                  position: 'absolute', bottom: -2, right: -2, fontSize: 14,
+                  background: '#fff', borderRadius: '50%', lineHeight: 1,
+                }}>{typeIcon[item.type]}</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#1C1815' }}>{u?.name}</span>
+                  <span style={{ fontSize: 11, color: '#A49E97' }}>{item.time}</span>
+                </div>
+                <div style={{ fontSize: 13, color: '#7A7268', lineHeight: 1.5 }}>{item.text}</div>
+              </div>
+            </div>
+          );
+        }) : messages.map((item, i) => {
           const u = users.find(u => u.id === item.userId);
           return (
             <div key={i} style={{
@@ -1058,6 +1273,128 @@ function HotListScreen({ onBack, onPostClick, accentColor }) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   AUTH MODAL
+══════════════════════════════════════════════════════════ */
+function AuthModal({ mode, onModeChange, onClose, onSuccess, accentColor }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
+  const [nickname, setNickname] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async () => {
+    if (loading) return
+    setError('')
+    setLoading(true)
+    try {
+      if (mode === 'login') {
+        const data = await apiRequest('POST', '/auth/login', { email, password })
+        window.AUTH?.setSession(data.user, data.accessToken)
+        onSuccess(data.user)
+      } else {
+        await apiRequest('POST', '/auth/register', { email, password, username, nickname })
+        const loginData = await apiRequest('POST', '/auth/login', { email, password })
+        window.AUTH?.setSession(loginData.user, loginData.accessToken)
+        onSuccess(loginData.user)
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputStyle = {
+    width: '100%', background: '#F8F5F0', border: '1px solid #EDE8E0',
+    borderRadius: 10, padding: '11px 14px', fontSize: 14, color: '#1C1815',
+    outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+    }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{
+        width: '100%', maxWidth: 340, background: '#fff',
+        borderRadius: 20, padding: '28px 24px 24px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+      }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: '#1C1815', marginBottom: 6 }}>
+          {mode === 'login' ? '登录楚门会' : '注册账号'}
+        </div>
+        <div style={{ fontSize: 13, color: '#A49E97', marginBottom: 20 }}>
+          {mode === 'login' ? '欢迎回来' : '加入 AI 实战社区'}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {mode === 'register' && (
+            <>
+              <input
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="用户名（字母数字）"
+                style={inputStyle}
+              />
+              <input
+                value={nickname}
+                onChange={e => setNickname(e.target.value)}
+                placeholder="昵称（显示名）"
+                style={inputStyle}
+              />
+            </>
+          )}
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="邮箱"
+            style={inputStyle}
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            placeholder="密码"
+            style={inputStyle}
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+          />
+        </div>
+
+        {error && (
+          <div style={{ fontSize: 13, color: '#E53E3E', marginTop: 10, padding: '8px 12px', background: '#FFF5F5', borderRadius: 8 }}>
+            {error}
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          style={{
+            width: '100%', background: loading ? '#E8E2D9' : accentColor,
+            color: loading ? '#A49E97' : '#fff', border: 'none', borderRadius: 12,
+            padding: '13px 0', fontSize: 15, fontWeight: 600, cursor: loading ? 'default' : 'pointer',
+            marginTop: 16, transition: 'background 0.2s',
+          }}
+        >
+          {loading ? '请稍候…' : mode === 'login' ? '登录' : '注册'}
+        </button>
+
+        <div style={{ textAlign: 'center', marginTop: 14, fontSize: 13, color: '#A49E97' }}>
+          {mode === 'login' ? '没有账号？' : '已有账号？'}
+          <span
+            onClick={() => { setError(''); onModeChange(mode === 'login' ? 'register' : 'login') }}
+            style={{ color: accentColor, cursor: 'pointer', marginLeft: 4, fontWeight: 600 }}
+          >
+            {mode === 'login' ? '立即注册' : '去登录'}
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ══════════════════════════════════════════════════════════
    ROOT APP
 ══════════════════════════════════════════════════════════ */
 function App() {
@@ -1075,6 +1412,15 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [savedPostIds, setSavedPostIds] = useState(new Set());
   const [feedFilters, setFeedFilters] = useState({ category: 'all', time: 'all', type: 'all' });
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  const [currentUser, setCurrentUser] = useState(window.AUTH?.currentUser || null);
+
+  useEffect(() => {
+    if (window.AUTH) {
+      window.AUTH._showLoginModal = () => setShowAuthModal(true)
+    }
+  }, [])
 
   const matchesTimeFilter = (post, time) => {
     if (time === 'all') return true;
@@ -1100,14 +1446,47 @@ function App() {
 
   const openPost = (post) => setDetailPost(post);
   const closeDetail = () => setDetailPost(null);
-  const toggleSave = (postId) => setSavedPostIds(prev => {
-    const next = new Set(prev);
-    if (next.has(postId)) next.delete(postId); else next.add(postId);
-    return next;
-  });
+  const toggleSave = async (postId) => {
+    if (!requireAuth()) return
+    const isCurrentlySaved = savedPostIds.has(postId)
+    setSavedPostIds(prev => {
+      const next = new Set(prev)
+      if (next.has(postId)) next.delete(postId); else next.add(postId)
+      return next
+    })
+    try {
+      if (isCurrentlySaved) {
+        await apiRequest('DELETE', `/posts/${postId}/bookmark`)
+      } else {
+        await apiRequest('POST', `/posts/${postId}/bookmark`)
+      }
+    } catch (e) {
+      setSavedPostIds(prev => {
+        const next = new Set(prev)
+        if (isCurrentlySaved) next.add(postId); else next.delete(postId)
+        return next
+      })
+    }
+  }
   const openUser = (user) => { if (user) setViewingUser(user); };
-  const handleCreatePost = (post) => {
-    setPosts(prev => [post, ...prev]);
+  const handleCreatePost = async (post) => {
+    if (!requireAuth()) { setShowCreate(false); return; }
+    try {
+      const body = {
+        title: post.title,
+        content: post.content ? `<p>${post.content}</p>` : `<p>${post.excerpt || post.title}</p>`,
+        categoryId: post.category || 'agent',
+        tags: post.tags || [],
+      }
+      if (post.coverUrl) {
+        body.coverUrl = post.coverUrl
+        body.imageAspect = post.imageAspect
+      }
+      await apiRequest('POST', '/posts', body)
+      alert('帖子发布成功！审核通过后将显示在列表中。')
+    } catch (e) {
+      alert('发布失败：' + e.message)
+    }
     setShowCreate(false);
     setScreen('feed');
   };
@@ -1199,6 +1578,20 @@ function App() {
 
       {/* Share card modal */}
       {sharePost && <ShareCardModal post={sharePost} onClose={() => setSharePost(null)}/>}
+
+      {/* Auth Modal */}
+      {showAuthModal && (
+        <AuthModal
+          mode={authMode}
+          onModeChange={setAuthMode}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={(user) => {
+            setCurrentUser(user)
+            setShowAuthModal(false)
+          }}
+          accentColor={accent}
+        />
+      )}
 
       {/* Tweaks panel */}
       <TweaksPanel tweaks={tweaks} setTweak={setTweak}>
