@@ -1,58 +1,147 @@
-# 楚门会 AI 论坛前端展示版
+# 楚门会 BBS
 
-一个基于 React + Vite 的纯前端论坛展示项目，用来尽量还原原始原型的布局、信息结构和交互方式，并补齐可演示的前端能力，方便直接部署到静态服务器。
+楚门会 BBS 是一个前后端一体的社区项目，当前已经具备可运行的基础社区能力：
 
-## 项目简介
+- 用户注册
+- 用户登录
+- 帖子列表 / 帖子详情
+- 发帖
+- 评论
+- 点赞 / 收藏
+- 图片上传
 
-这个项目的目标不是重新设计一版社区产品，而是：
-
-- 保留原始原型的页面结构和视觉布局
-- 用 React + Vite 改造成正式前端项目
-- 在不接后端接口的前提下补齐展示型交互
-- 让项目可以直接本地运行、打包和部署
-
-适合用于：
-
-- 产品原型展示
-- 静态演示站
-- 前端效果汇报
-- 后续接真实接口前的壳层开发
-
-## 当前功能
-
-- 首页双列帖子流展示
-- 分类切换、热门 / 最新 / 精华切换
-- 新增 ClaudeCode / Codex 两个内容 tab
-- 前端筛选匹配
-- 帖子详情页展示
-- 其他用户主页展示
-- 发布帖子
-- 本地上传图片预览
-- 图片内容按 `16:9` / `9:16` 接入
-- 分享弹层展示
-- 收藏交互展示
-
-## 最近更新
-
-- 已实现 ClaudeCode / Codex 内容 tab
-- 已补充对应帖子、评论与正文数据
-- 已更新本地说明与数据片段文件
+前端基于 React + Vite，后端基于 Fastify + TypeScript + Prisma + PostgreSQL。
 
 ## 技术栈
 
+### 前端
+
 - React 18
 - Vite 5
-- 纯前端本地数据驱动
+- 现有原型迁移结构 `src/legacy/*`
 
-## 本地开发
+### 后端
 
-安装依赖：
+- Fastify 4
+- TypeScript
+- Prisma
+- PostgreSQL
+- JWT
+- bcrypt
+
+## 目录结构
+
+```text
+chumenhui-bbs/
+├─ src/
+│  ├─ api/                  前端 API 封装
+│  ├─ legacy/               前端原型与业务页面
+│  ├─ App.jsx
+│  ├─ main.jsx
+│  └─ styles.css
+├─ public/                  前端静态资源
+├─ backend/
+│  ├─ prisma/               Prisma schema 与 seed
+│  ├─ src/
+│  │  ├─ routes/            路由
+│  │  ├─ services/          业务逻辑
+│  │  ├─ middleware/        鉴权 / 权限
+│  │  ├─ plugins/           Fastify 插件
+│  │  ├─ lib/               Prisma / token blacklist / mailer
+│  │  ├─ app.ts
+│  │  └─ server.ts
+│  ├─ docker-compose.yml
+│  ├─ package.json
+│  └─ .env.example
+├─ uploads/
+├─ index.html
+└─ README.md
+```
+
+## 本地启动
+
+### 1. 安装前端依赖
 
 ```bash
 npm install
 ```
 
-启动开发环境：
+### 2. 安装后端依赖
+
+```bash
+cd backend
+npm install
+```
+
+### 3. 启动数据库
+
+项目默认使用 Docker 启动独立 PostgreSQL：
+
+```bash
+cd backend
+docker compose up -d
+```
+
+默认端口：
+
+- PostgreSQL: `5433`
+
+### 4. 配置后端环境变量
+
+复制环境变量模板：
+
+```bash
+cd backend
+copy .env.example .env
+```
+
+默认开发配置关键项：
+
+```env
+PORT=3001
+FRONTEND_URL=http://localhost:5173
+DATABASE_URL="postgresql://bbs_user:bbs_pass@localhost:5433/bbs_db"
+REDIS_URL=redis://localhost:6379
+```
+
+说明：
+
+- 当前项目里的 `lib/redis.ts` 实际是内存黑名单实现，不依赖真实 Redis 才能运行。
+- `SMTP_*` 仅用于找回密码相关能力，日常本地联调不是必需项。
+
+### 5. 初始化数据库
+
+```bash
+cd backend
+npx prisma generate
+npx prisma db push
+npm run db:seed
+```
+
+### 6. 启动后端
+
+开发模式：
+
+```bash
+cd backend
+npm run dev
+```
+
+生产/稳定模式：
+
+```bash
+cd backend
+npm run build
+npm run start
+```
+
+默认地址：
+
+```text
+http://localhost:3001
+```
+
+### 7. 启动前端
 
 ```bash
 npm run dev
@@ -60,71 +149,90 @@ npm run dev
 
 默认地址：
 
-```bash
-http://127.0.0.1:5173
-```
-
-## 打包与预览
-
-打包：
-
-```bash
-npm run build
-```
-
-本地预览：
-
-```bash
-npm run preview
-```
-
-默认预览地址：
-
-```bash
-http://127.0.0.1:4173
-```
-
-## 项目结构
-
 ```text
-src/
-  legacy/
-    app.jsx             原始原型主逻辑迁移
-    components.jsx      通用组件
-    data.js             页面数据
-    features.jsx        用户页、筛选等功能层
-    runtime.jsx         原型运行时挂载入口
-    settings.jsx        设置页逻辑
-    tweaks-panel.jsx    原型调节面板
-  main.jsx              Vite 入口
-  styles.css            外层页面样式
-
-public/
-  uploads/              展示用图片资源
+http://localhost:5173
 ```
 
-## 数据与运行方式
+## 当前已实现功能
 
-- 当前项目不接真实后端接口
-- 页面内容主要来自 `src/legacy/data.js`
-- 原型逻辑通过 `src/legacy/runtime.jsx` 按依赖顺序加载
-- 这套实现优先保证“还原原版排版”，而不是重写成全新的组件设计
+### 用户体系
 
-## 部署说明
+- 邮箱注册
+- 邮箱密码登录
+- Access Token / Refresh Token
+- 登出
 
-这是标准 Vite 静态项目。
+### 内容能力
 
-构建完成后会生成 `dist/` 目录，可直接部署到：
+- 分类列表
+- 帖子列表
+- 帖子详情
+- 创建帖子
+- 评论列表
+- 发布评论
 
-- Nginx
-- Vercel
-- Netlify
-- GitHub Pages
-- 任意静态文件服务器
+### 互动能力
 
-## 后续可继续扩展
+- 点赞帖子
+- 收藏帖子
+- 评论点赞
+- 用户关注
 
-- 收藏 / 发布 / 资料编辑做本地持久化
-- 接真实登录与用户体系
-- 接帖子接口、评论接口、上传接口
-- 接后台管理或内容运营系统
+### 上传能力
+
+- 登录态图片上传
+- 返回 `/uploads/...` 访问路径
+
+## 开发说明
+
+### 前端
+
+前端当前不是完全重写的新架构，而是在原型基础上接入真实 API：
+
+- `src/legacy/runtime.jsx` 负责按顺序加载原型模块
+- `src/legacy/api-loader.js` 负责启动时拉取真实分类与帖子数据
+- `src/api/client.js` 负责 token 和基础请求封装
+- `src/api/services.js` 负责各业务接口调用
+
+### 后端
+
+后端主入口：
+
+- `backend/src/app.ts`
+- `backend/src/server.ts`
+
+核心路由：
+
+- `backend/src/routes/auth.ts`
+- `backend/src/routes/posts.ts`
+- `backend/src/routes/comments.ts`
+- `backend/src/routes/upload.ts`
+- `backend/src/routes/users.ts`
+
+### Prisma 说明
+
+当前仓库里的 `backend/src/lib/prisma.ts` 使用的是已生成的 Prisma Client 产物路径。  
+这是为了兼容当前本地环境下旧版本 Prisma Client 的生成异常而保留的运行方式。
+
+如果后续要做正式整理，建议：
+
+1. 升级 `prisma` 与 `@prisma/client`
+2. 恢复标准导入方式
+3. 重新验证 `npm run dev` / `npm run build` / `npm run start`
+
+## 文档索引
+
+- [项目结构说明](./project-structure.md)
+- [后端说明](./backend/README.md)
+- [开发与运行说明](./docs/development.md)
+- [API 概览](./docs/api-overview.md)
+
+## 当前状态说明
+
+当前仓库已经从“纯前端展示版”推进到“前后端联通版”。  
+如果继续往生产化走，建议下一阶段重点处理：
+
+- Prisma 版本与导入方式标准化
+- 后端启动流程进一步收敛
+- 通知 / 管理后台 / 搜索等模块补全验证
+- 更完整的错误处理和接口测试
