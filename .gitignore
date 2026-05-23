@@ -1,6 +1,7 @@
 node_modules/
 dist/
 prograss/
+.playwright-mcp/
 .DS_Store
 *.log
 npm-debug.log*

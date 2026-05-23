@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserLevel {
+  BEGINNER
+  INTERMEDIATE
+  ELITE
+  MENTOR
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  DELETED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CommentStatus {
+  VISIBLE
+  DELETED
+}
+
+enum LikeTargetType {
+  POST
+  COMMENT
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  REPLY
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique @db.VarChar(50)
+  email          String   @unique @db.VarChar(255)
+  password       String   @db.VarChar(255)
+  nickname       String?  @db.VarChar(50)
+  avatar         String?  @db.VarChar(500)
+  bio            String?  @db.Text
+  title          String?  @db.VarChar(100)
+  website        String?  @db.VarChar(500)
+  level          UserLevel @default(BEGINNER)
+  role           UserRole  @default(USER)
+  postCount      Int      @default(0) @map("post_count")
+  likeCount      Int      @default(0) @map("like_count")
+  followerCount  Int      @default(0) @map("follower_count")
+  followingCount Int      @default(0) @map("following_count")
+  isBanned       Boolean  @default(false) @map("is_banned")
+  resetToken     String?  @map("reset_token")
+  resetTokenExp  DateTime? @map("reset_token_exp")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  bookmarks     Bookmark[]
+  followers     Follow[]  @relation("Following")
+  following     Follow[]  @relation("Follower")
+  notificationsReceived Notification[] @relation("Receiver")
+  notificationsActed    Notification[] @relation("Actor")
+
+  @@map("users")
+}
+
+model Category {
+  id    String @id @db.VarChar(50)
+  label String @db.VarChar(50)
+  color String @db.VarChar(20)
+  bg    String @db.VarChar(20)
+  sort  Int    @default(0)
+
+  posts Post[]
+
+  @@map("categories")
+}
+
+model Post {
+  id           Int          @id @default(autoincrement())
+  userId       Int          @map("user_id")
+  categoryId   String       @map("category_id") @db.VarChar(50)
+  title        String       @db.VarChar(200)
+  content      String       @db.Text
+  excerpt      String?      @db.VarChar(500)
+  coverUrl     String?      @map("cover_url") @db.VarChar(500)
+  imageAspect  Decimal?     @map("image_aspect") @db.Decimal(5, 2)
+  isElite      Boolean      @default(false) @map("is_elite")
+  likeCount    Int          @default(0) @map("like_count")
+  bookmarkCount Int         @default(0) @map("bookmark_count")
+  commentCount Int          @default(0) @map("comment_count")
+  viewCount    Int          @default(0) @map("view_count")
+  hotScore     Float        @default(0) @map("hot_score")
+  reviewStatus ReviewStatus @default(PENDING) @map("review_status")
+  status       PostStatus   @default(PUBLISHED) @map("status")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  comments Comment[]
+  bookmarks Bookmark[]
+  tags     PostTag[]
+
+  @@map("posts")
+}
+
+model Tag {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(50)
+
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+model PostTag {
+  postId Int @map("post_id")
+  tagId  Int @map("tag_id")
+
+  post Post @relation(fields: [postId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
+
+model Comment {
+  id        Int           @id @default(autoincrement())
+  postId    Int           @map("post_id")
+  userId    Int           @map("user_id")
+  parentId  Int?          @map("parent_id")
+  content   String        @db.Text
+  likeCount Int           @default(0) @map("like_count")
+  status    CommentStatus @default(VISIBLE)
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  post    Post      @relation(fields: [postId], references: [id])
+  user    User      @relation(fields: [userId], references: [id])
+  parent  Comment?  @relation("Replies", fields: [parentId], references: [id])
+  replies Comment[] @relation("Replies")
+
+  @@map("comments")
+}
+
+model Like {
+  userId     Int            @map("user_id")
+  targetId   Int            @map("target_id")
+  targetType LikeTargetType @map("target_type")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@id([userId, targetId, targetType])
+  @@map("likes")
+}
+
+model Bookmark {
+  userId    Int      @map("user_id")
+  postId    Int      @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+
+  @@id([userId, postId])
+  @@map("bookmarks")
+}
+
+model Follow {
+  followerId  Int      @map("follower_id")
+  followingId Int      @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower  User @relation("Follower", fields: [followerId], references: [id])
+  following User @relation("Following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
+  @@map("follows")
+}
+
+model Notification {
+  id         Int              @id @default(autoincrement())
+  userId     Int              @map("user_id")
+  actorId    Int              @map("actor_id")
+  type       NotificationType
+  targetId   Int              @map("target_id")
+  targetType String           @map("target_type") @db.VarChar(20)
+  isRead     Boolean          @default(false) @map("is_read")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  user  User @relation("Receiver", fields: [userId], references: [id])
+  actor User @relation("Actor", fields: [actorId], references: [id])
+
+  @@map("notifications")
+}
